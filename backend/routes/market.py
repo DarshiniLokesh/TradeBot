@@ -6,6 +6,11 @@ from services.stock_service import stock_service
 from services.chatbot_service import chatbot_service
 from models.stock import StockOrder, OrderType, OrderStatus
 from typing import List
+from pydantic import BaseModel
+
+class ChatRequest(BaseModel):
+    message: str
+    user_id: str = "default_user"
 
 router = APIRouter(prefix="/market", tags=["Market"])
 
@@ -55,16 +60,16 @@ async def get_portfolio(user_id: str):
         raise HTTPException(status_code=400, detail=str(e))
 
 @router.post("/chat")
-async def chat_with_bot(message: str, user_id: str = "default_user"):
+async def chat_with_bot(chat_request: ChatRequest):
     """Chat with the stock trading bot using natural language"""
     try:
-        response = await chatbot_service.process_message(message, user_id)
+        response = await chatbot_service.process_message(chat_request.message, chat_request.user_id)
         return {
             "status": "success",
             "data": {
-                "message": message,
+                "message": chat_request.message,
                 "response": response,
-                "user_id": user_id,
+                "user_id": chat_request.user_id,
                 "timestamp": datetime.now(timezone.utc).isoformat()
             }
         }
