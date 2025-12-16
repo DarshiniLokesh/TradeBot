@@ -28,11 +28,11 @@ class StockService:
             
             # Get current data
             hist = stock.history(period="2d")
-            if hist.empty:
+            if hist is None or hist.empty:
                 raise ValueError(f"No data found for symbol {symbol}")
-
-            # Get additional info
-            info = stock.info
+            
+            # Get additional info (yfinance can return None/empty)
+            info = stock.info or {}
             
             current_row = hist.iloc[-1]
             previous_row = hist.iloc[-2] if len(hist) > 1 else current_row
@@ -110,9 +110,21 @@ class StockService:
             if db is None:
                 raise Exception("Database not available")
 
+            # Convert string ID to ObjectId for MongoDB query
+            from bson import ObjectId
+            try:
+                object_id = ObjectId(order_id)
+            except:
+                # If not a valid ObjectId, try finding by string id field
+                order_doc = await db.orders.find_one({"id": order_id})
+                if order_doc:
+                    object_id = order_doc["_id"]
+                else:
+                    raise Exception("Invalid order ID format")
+
             # Find and update order
             result = await db.orders.update_one(
-                {"_id": order_id},
+                {"_id": object_id},
                 {"$set": {"status": OrderStatus.EXECUTED}}
             )
             
@@ -120,8 +132,14 @@ class StockService:
                 raise Exception("Order not found or already executed")
 
             # Get updated order
-            order_doc = await db.orders.find_one({"_id": order_id})
-            order = StockOrder(**order_doc)
+            order_doc = await db.orders.find_one({"_id": object_id})
+            if not order_doc:
+                raise Exception("Order not found after execution")
+            
+            # Convert MongoDB document to StockOrder
+            order_dict = order_doc.copy()
+            order_dict["id"] = str(order_dict["_id"])
+            order = StockOrder(**order_dict)
             
             # Update portfolio
             await self._update_portfolio(order)

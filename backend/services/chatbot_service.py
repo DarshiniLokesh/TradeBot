@@ -186,11 +186,14 @@ class StockChatbotService:
                 notes="Order placed via chatbot"
             )
             
-            # Place order
+            # Set order status to EXECUTED so portfolio updates immediately
+            order.status = OrderStatus.EXECUTED
+            
+            # Place order (which will update portfolio since status is EXECUTED)
             placed_order = await stock_service.place_order(order)
             
             return f"""
-✅ **Buy Order Placed Successfully!**
+✅ **Buy Order Executed Successfully!**
 
 **Stock:** {symbol.upper()}
 **Quantity:** {quantity} shares
@@ -198,7 +201,7 @@ class StockChatbotService:
 **Total Amount:** ${placed_order.total_amount:.2f}
 **Order ID:** {placed_order.id}
 
-Your order has been placed and will be executed at market price.
+Your order has been executed and added to your portfolio!
             """.strip()
             
         except Exception as e:
@@ -227,11 +230,14 @@ Your order has been placed and will be executed at market price.
                 notes="Order placed via chatbot"
             )
             
-            # Place order
+            # Set order status to EXECUTED so portfolio updates immediately
+            order.status = OrderStatus.EXECUTED
+            
+            # Place order (which will update portfolio since status is EXECUTED)
             placed_order = await stock_service.place_order(order)
             
             return f"""
-✅ **Sell Order Placed Successfully!**
+✅ **Sell Order Executed Successfully!**
 
 **Stock:** {symbol.upper()}
 **Quantity:** {quantity} shares
@@ -239,7 +245,7 @@ Your order has been placed and will be executed at market price.
 **Total Amount:** ${placed_order.total_amount:.2f}
 **Order ID:** {placed_order.id}
 
-Your order has been placed and will be executed at market price.
+Your order has been executed and portfolio updated!
             """.strip()
             
         except Exception as e:
