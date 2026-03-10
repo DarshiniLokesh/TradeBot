@@ -25,7 +25,7 @@ function App() {
     const watchlist = ['AAPL', 'TSLA', 'MSFT', 'GOOGL', 'AMZN', 'NVDA'];
     try {
       const promises = watchlist.map(symbol =>
-        fetch(`http://localhost:8000/market/stock/${symbol}`)
+        fetch(`${process.env.REACT_APP_API_URL || "http://localhost:8000"}/market/stock/${symbol}`)
           .then(res => res.json())
           .then(data => data.data)
       );

@@ -44,7 +44,7 @@ const StockAnalytics: React.FC<StockAnalyticsProps> = ({ symbol, onSymbolChange 
     const fetchAnalytics = async (sym: string) => {
         setLoading(true);
         try {
-            const response = await fetch(`http://localhost:8000/market/analytics/${sym}`);
+            const response = await fetch(`${process.env.REACT_APP_API_URL || "http://localhost:8000"}/market/analytics/${sym}`);
             const data = await response.json();
             setAnalytics(data.data);
         } catch (error) {

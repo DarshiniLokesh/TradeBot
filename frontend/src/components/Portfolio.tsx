@@ -28,7 +28,7 @@ const Portfolio: React.FC = () => {
     const fetchPortfolio = async () => {
         setLoading(true);
         try {
-            const response = await fetch('http://localhost:8000/market/portfolio/default_user');
+            const response = await fetch(`${process.env.REACT_APP_API_URL || "http://localhost:8000"}/market/portfolio/default_user`);
             const data = await response.json();
             setPortfolio(data.data);
         } catch (error) {
