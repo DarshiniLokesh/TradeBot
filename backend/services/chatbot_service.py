@@ -1,8 +1,9 @@
 import re
 from typing import Dict, List, Optional, Tuple
 from datetime import datetime, timezone
-from models.stock import StockOrder, OrderType, OrderStatus
+from models.stock import StockOrder, OrderType, OrderStatus, AutomatedPlan
 from services.stock_service import stock_service
+from database import db
 import asyncio
 
 class StockChatbotService:
@@ -48,6 +49,21 @@ class StockChatbotService:
                 r'order\s+history',
                 r'pending\s+orders',
                 r'my\s+trades'
+            ],
+            'automate_stock': [
+                r'automate\s+(\d+)\s+shares?\s+of\s+([A-Za-z]+)',
+                r'automate\s+buying\s+(\d+)\s+shares?\s+of\s+([A-Za-z]+)'
+            ],
+            'get_alerts': [
+                r'show\s+my\s+alerts',
+                r'price\s+alerts',
+                r'my\s+alerts'
+            ],
+            'best_stock': [
+                r'best\s+stock[s]?\s+to\s+buy',
+                r'what\s+to\s+buy',
+                r'which\s+stock[s]?\s+to\s+buy',
+                r'recommend\s+a\s+stock'
             ]
         }
         
@@ -65,12 +81,16 @@ class StockChatbotService:
 • "Show my portfolio" - View current positions
 • "Order history" - View trading history
 
+**Automation & Alerts:**
+• "Automate buying 1 share of AAPL" - Setup daily automation plan
+• "Show my alerts" - View recent drop alerts
+
 **Examples:**
 • "Buy 100 shares of AAPL"
 • "Sell 50 MSFT at market"
 • "What's the current price of TSLA?"
-• "Analyze GOOGL for me"
-• "Show my portfolio summary"
+• "Automate buying 5 shares of MSFT"
+• "Show my alerts"
         """
 
     async def process_message(self, message: str, user_id: str = "default_user") -> str:
@@ -93,7 +113,13 @@ class StockChatbotService:
             if await self._is_sell_command(message):
                 return await self._handle_sell_command(message, user_id)
             
+            if await self._is_automate_command(message):
+                return await self._handle_automate_command(message, user_id)
+                
             # Process information commands
+            if await self._is_best_stock_query(message):
+                return await self._handle_best_stock_query()
+                
             if await self._is_price_query(message):
                 return await self._handle_price_query(message)
             
@@ -105,6 +131,9 @@ class StockChatbotService:
             
             if await self._is_orders_query(message):
                 return await self._handle_orders_query(user_id)
+                
+            if await self._is_alerts_query(message):
+                return await self._handle_alerts_query(user_id)
             
             # Default response
             return "I didn't understand that command. Try saying 'help' to see what I can do, or ask me to buy/sell stocks, get prices, or analyze investments."
@@ -163,6 +192,30 @@ class StockChatbotService:
                 return True
         return False
 
+    async def _is_automate_command(self, message: str) -> bool:
+        """Check if message is an automate command"""
+        for pattern in self.command_patterns['automate_stock']:
+            if re.search(pattern, message):
+                return True
+        # Additional keyword check
+        if 'automate' in message and 'buy' in message:
+            return True
+        return False
+
+    async def _is_alerts_query(self, message: str) -> bool:
+        """Check if message is asking for alerts"""
+        for pattern in self.command_patterns['get_alerts']:
+            if re.search(pattern, message):
+                return True
+        return False
+        
+    async def _is_best_stock_query(self, message: str) -> bool:
+        """Check if message is asking for best stock recommendations"""
+        for pattern in self.command_patterns['best_stock']:
+            if re.search(pattern, message):
+                return True
+        return False
+
     async def _handle_buy_command(self, message: str, user_id: str) -> str:
         """Handle buy stock commands"""
         try:
@@ -172,40 +225,87 @@ class StockChatbotService:
             if not quantity or not symbol:
                 return "Please specify the quantity and stock symbol. Example: 'Buy 10 shares of AAPL'"
             
-            # Get current market price
-            stock_data = await stock_service.get_stock_data(symbol)
-            
-            # Create order
-            order = StockOrder(
-                symbol=symbol.upper(),
-                order_type=OrderType.BUY,
-                quantity=quantity,
-                price=stock_data.price,
-                total_amount=quantity * stock_data.price,
-                user_id=user_id,
-                notes="Order placed via chatbot"
-            )
-            
-            # Set order status to EXECUTED so portfolio updates immediately
-            order.status = OrderStatus.EXECUTED
-            
-            # Place order (which will update portfolio since status is EXECUTED)
-            placed_order = await stock_service.place_order(order)
+            # Analyze ordered stock
+            try:
+                analytics = await stock_service.get_stock_analytics(symbol)
+                risk_level = "🟢 Low" if analytics.risk_score < 30 else "🟡 Medium" if analytics.risk_score < 70 else "🔴 High"
+                analysis_msg = f"📊 **Quick Analysis:** Risk Level is {risk_level} ({analytics.risk_score}/100). {analytics.recommendations[0] if analytics.recommendations else ''}"
+            except Exception:
+                analysis_msg = "Could not analyze the requested stock."
+                
+            # Suggest best stock
+            try:
+                best_opportunity = await stock_service.get_best_market_opportunity()
+                if best_opportunity["symbol"] != symbol.upper():
+                    suggestion_msg = f"\n\n💡 **Market Suggestion:** Given the current market situation, you might also consider **{best_opportunity['symbol']}** (Price: ${best_opportunity['price']:.2f}). It has a low risk score ({best_opportunity['risk_score']}) and the analysis shows: {best_opportunity['recommendation'].lower()}"
+                else:
+                    suggestion_msg = f"\n\n💡 **Great Choice!** {symbol.upper()} is currently our top recommended stock to buy."
+            except Exception:
+                suggestion_msg = ""
             
             return f"""
-✅ **Buy Order Executed Successfully!**
+🛑 **Order Not Placed automatically**
 
-**Stock:** {symbol.upper()}
-**Quantity:** {quantity} shares
-**Price:** ${stock_data.price:.2f}
-**Total Amount:** ${placed_order.total_amount:.2f}
-**Order ID:** {placed_order.id}
+I've analyzed your request to buy {quantity} shares of {symbol.upper()}:
 
-Your order has been executed and added to your portfolio!
-            """.strip()
+{analysis_msg}{suggestion_msg}
+
+If you still want to proceed with buying {symbol.upper()}, please use the trading interface to manually confirm your order.
+""".strip()
+
             
         except Exception as e:
-            return f"❌ Failed to place buy order: {str(e)}"
+            return f"❌ Failed to process buy command: {str(e)}"
+
+    async def _handle_best_stock_query(self) -> str:
+        """Handle request for the best stock to buy right now"""
+        try:
+            # We already have a function that finds the best stock based on lowest risk score
+            best_opportunity = await stock_service.get_best_market_opportunity()
+            
+            # Find a bad stock (highest risk score) as a "what not to buy" suggestion
+            popular_symbols = ["AAPL", "MSFT", "GOOGL", "AMZN", "NVDA", "META", "TSLA"]
+            worst_stock = None
+            highest_risk = 0
+            worst_analytics = None
+            
+            # Since get_best_market_opportunity already does similar, we could optimize, 
+            # but for simplicity we fetch sequentially or concurrently here
+            tasks = [stock_service.get_stock_analytics(sym) for sym in popular_symbols]
+            results = await asyncio.gather(*tasks, return_exceptions=True)
+            
+            for i, result in enumerate(results):
+                if isinstance(result, Exception):
+                    continue
+                if result.risk_score > highest_risk:
+                    highest_risk = result.risk_score
+                    worst_stock = popular_symbols[i]
+                    worst_analytics = result
+                    
+            if not worst_stock:
+                worst_stock = "Unknown"
+                highest_risk = 100
+                worst_reason = "No data available"
+            else:
+                worst_reason = worst_analytics.recommendations[0] if worst_analytics.recommendations else "High risk based on current indicators."
+
+            response = f"""
+📈 **Market Recommendations Based on Real-Time Data**
+
+✅ **Best Stock to Buy:** **{best_opportunity['symbol']}**
+• **Current Price:** ${best_opportunity['price']:.2f}
+• **Risk Score:** 🟢 Low ({best_opportunity['risk_score']}/100)
+• **Analysis:** {best_opportunity['recommendation']}
+
+❌ **Stock to Avoid Right Now:** **{worst_stock}**
+• **Risk Score:** 🔴 High ({highest_risk}/100)
+• **Analysis:** {worst_reason}
+
+*Note: This is based on technical and fundamental indicators. Always do your own research before investing.*
+""".strip()
+            return response
+        except Exception as e:
+            return f"❌ Failed to get stock recommendations: {str(e)}"
 
     async def _handle_sell_command(self, message: str, user_id: str) -> str:
         """Handle sell stock commands"""
@@ -391,6 +491,68 @@ For now, you can place new orders using commands like:
             
         except Exception as e:
             return f"❌ Failed to get orders: {str(e)}"
+
+    async def _handle_automate_command(self, message: str, user_id: str) -> str:
+        """Handle automate buy stock commands"""
+        try:
+            # Clean up message to make parsing easier by converting it to a standard 'buy' command format
+            clean_message = message.replace("automate buying", "buy").replace("automate", "buy")
+            quantity, symbol = self._extract_quantity_and_symbol(clean_message, "buy")
+            
+            if not quantity or not symbol:
+                return "Please specify the quantity and stock symbol for automation. Example: 'Automate buying 10 shares of AAPL'"
+            
+            symbol = symbol.upper()
+            
+            # Check if stock exists
+            await stock_service.get_stock_data(symbol)
+            
+            plan = AutomatedPlan(
+                user_id=user_id,
+                symbol=symbol,
+                quantity=quantity,
+                frequency="daily",
+                created_at=datetime.now(timezone.utc)
+            )
+            
+            result = await db.automated_plans.insert_one(plan.dict())
+            
+            return f"""
+🤖 **Automated Trading Plan Activated!**
+
+**Stock:** {symbol}
+**Quantity:** {quantity} shares
+**Frequency:** Daily
+
+I will execute a buy order for {quantity} shares of {symbol} every day. I will also monitor {symbol} and alert you if the price drops by 2% or more.
+""".strip()
+        except Exception as e:
+            return f"❌ Failed to setup automation: {str(e)}"
+
+    async def _handle_alerts_query(self, user_id: str) -> str:
+        """Handle alerts query"""
+        try:
+            if db is None:
+                return "Database not available"
+                
+            cursor = db.user_alerts.find({"user_id": user_id}).sort("timestamp", -1).limit(5)
+            alerts = await cursor.to_list(length=5)
+            
+            if not alerts:
+                return "📭 You have no recent price drop alerts."
+                
+            response = "🔔 **Recent Alerts:**\n\n"
+            for alert in alerts:
+                # Format time string correctly without modifying dictionary inline
+                tz_aware_time = alert['timestamp']
+                if tz_aware_time.tzinfo is None:
+                    tz_aware_time = tz_aware_time.replace(tzinfo=timezone.utc)
+                time_str = tz_aware_time.strftime('%b %d, %H:%M')
+                response += f"• [{time_str}] {alert['message']}\n\n"
+                
+            return response.strip()
+        except Exception as e:
+            return f"❌ Failed to get alerts: {str(e)}"
 
     def _extract_quantity_and_symbol(self, message: str, action: str) -> Tuple[Optional[int], Optional[str]]:
         """Extract quantity and symbol from buy/sell commands"""

@@ -1,0 +1,333 @@
+.portfolio-container {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.portfolio-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+.portfolio-header h2 {
+    font-size: 2rem;
+    font-weight: 700;
+}
+
+.portfolio-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 3rem;
+}
+
+.summary-card {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    padding: 2rem;
+    background: var(--bg-card);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    transition: all 0.3s ease;
+}
+
+.summary-card:hover {
+    border-color: var(--accent-primary);
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-lg);
+}
+
+.summary-icon {
+    font-size: 3rem;
+    width: 70px;
+    height: 70px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 212, 255, 0.1);
+    border-radius: var(--radius-md);
+}
+
+.summary-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    flex: 1;
+}
+
+.summary-label {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.summary-value {
+    font-size: 2rem;
+    font-weight: 900;
+    color: var(--text-primary);
+    letter-spacing: -1px;
+}
+
+.summary-percent {
+    font-size: 1.1rem;
+    font-weight: 700;
+}
+
+.total-pl.positive {
+    border-color: var(--success);
+}
+
+.total-pl.positive .summary-icon {
+    background: var(--success-bg);
+}
+
+.total-pl.positive .summary-value,
+.total-pl.positive .summary-percent {
+    color: var(--success);
+}
+
+.total-pl.negative {
+    border-color: var(--danger);
+}
+
+.total-pl.negative .summary-icon {
+    background: var(--danger-bg);
+}
+
+.total-pl.negative .summary-value,
+.total-pl.negative .summary-percent {
+    color: var(--danger);
+}
+
+.holdings-section {
+    margin-bottom: 3rem;
+}
+
+.holdings-section h3 {
+    font-size: 1.75rem;
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+}
+
+.holdings-table {
+    background: var(--bg-card);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+}
+
+.table-header {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr 1fr 1fr 1.2fr 1fr 1fr;
+    gap: 1rem;
+    padding: 1.25rem 1.5rem;
+    background: rgba(0, 212, 255, 0.05);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.th {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.table-row {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr 1fr 1fr 1.2fr 1fr 1fr;
+    gap: 1rem;
+    padding: 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+    transition: all 0.3s ease;
+}
+
+.table-row:last-child {
+    border-bottom: none;
+}
+
+.table-row:hover {
+    background: rgba(0, 212, 255, 0.05);
+}
+
+.td {
+    display: flex;
+    align-items: center;
+    font-size: 1rem;
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.symbol-cell {
+    font-weight: 800;
+}
+
+.symbol-badge {
+    padding: 0.5rem 1rem;
+    background: var(--accent-gradient);
+    color: white;
+    border-radius: var(--radius-sm);
+    font-size: 1rem;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+}
+
+.total-value-cell {
+    font-weight: 800;
+    color: var(--accent-primary);
+}
+
+.td.positive {
+    color: var(--success);
+    font-weight: 700;
+}
+
+.td.negative {
+    color: var(--danger);
+    font-weight: 700;
+}
+
+.empty-portfolio {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1.5rem;
+    padding: 4rem 2rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    text-align: center;
+}
+
+.empty-icon {
+    font-size: 5rem;
+    opacity: 0.5;
+}
+
+.empty-portfolio h3 {
+    font-size: 1.75rem;
+    font-weight: 700;
+    margin: 0;
+}
+
+.empty-portfolio p {
+    font-size: 1.1rem;
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+.performance-section {
+    margin-bottom: 2rem;
+}
+
+.performance-section h3 {
+    font-size: 1.75rem;
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+}
+
+.chart-placeholder {
+    background: var(--bg-card);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 3rem 2rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2rem;
+}
+
+.chart-bars {
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    gap: 1.5rem;
+    height: 200px;
+    width: 100%;
+    max-width: 600px;
+}
+
+.chart-bar {
+    flex: 1;
+    background: var(--accent-gradient);
+    border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+    transition: all 0.3s ease;
+    animation: growBar 0.6s ease-out;
+}
+
+.chart-bar:hover {
+    opacity: 0.8;
+    transform: scaleY(1.05);
+}
+
+@keyframes growBar {
+    from {
+        height: 0;
+    }
+}
+
+.chart-label {
+    font-size: 1rem;
+    color: var(--text-secondary);
+    font-weight: 600;
+    text-align: center;
+}
+
+.portfolio-loading,
+.portfolio-error {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1.5rem;
+    padding: 4rem 0;
+    text-align: center;
+}
+
+.portfolio-loading p,
+.portfolio-error {
+    font-size: 1.25rem;
+    color: var(--text-secondary);
+}
+
+@media (max-width: 1024px) {
+
+    .table-header,
+    .table-row {
+        grid-template-columns: 1.5fr repeat(6, 1fr);
+        gap: 0.75rem;
+        padding: 1rem;
+    }
+
+    .th,
+    .td {
+        font-size: 0.85rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .portfolio-summary {
+        grid-template-columns: 1fr;
+    }
+
+    .holdings-table {
+        overflow-x: auto;
+    }
+
+    .table-header,
+    .table-row {
+        min-width: 800px;
+    }
+
+    .chart-bars {
+        gap: 1rem;
+    }
+}

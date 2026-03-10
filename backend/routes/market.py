@@ -52,10 +52,51 @@ async def execute_order(order_id: str):
 
 @router.get("/portfolio/{user_id}")
 async def get_portfolio(user_id: str):
-    """Get user's portfolio"""
+    """Get user's portfolio with aggregated summary"""
     try:
-        portfolio = await stock_service.get_portfolio(user_id)
-        return {"status": "success", "data": portfolio}
+        portfolio_items = await stock_service.get_portfolio(user_id)
+        
+        # Calculate totals
+        total_value = 0
+        total_invested = 0
+        holdings = []
+        
+        for item in portfolio_items:
+            total_value += item.current_value
+            total_invested += item.total_invested
+            
+            # Get current stock data for latest price
+            try:
+                stock_data = await stock_service.get_stock_data(item.symbol)
+                current_price = stock_data.price
+            except:
+                current_price = item.current_value / item.quantity if item.quantity > 0 else 0
+            
+            profit_loss = item.current_value - item.total_invested
+            profit_loss_percent = (profit_loss / item.total_invested * 100) if item.total_invested > 0 else 0
+            
+            holdings.append({
+                "symbol": item.symbol,
+                "quantity": item.quantity,
+                "avg_price": item.average_price,
+                "current_price": current_price,
+                "total_value": item.current_value,
+                "profit_loss": profit_loss,
+                "profit_loss_percent": profit_loss_percent
+            })
+        
+        total_profit_loss = total_value - total_invested
+        profit_loss_percent = (total_profit_loss / total_invested * 100) if total_invested > 0 else 0
+        
+        portfolio_summary = {
+            "total_value": total_value,
+            "total_invested": total_invested,
+            "total_profit_loss": total_profit_loss,
+            "profit_loss_percent": profit_loss_percent,
+            "holdings": holdings
+        }
+        
+        return {"status": "success", "data": portfolio_summary}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 

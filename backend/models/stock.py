@@ -67,3 +67,21 @@ class ChatMessage(BaseModel):
     response: str
     timestamp: datetime
     context: Optional[Dict[str, Any]] = None
+
+class AutomatedPlan(BaseModel):
+    id: Optional[str] = None
+    user_id: str
+    symbol: str
+    quantity: int
+    frequency: str = "daily"  # e.g. daily, weekly
+    created_at: datetime
+    last_executed: Optional[datetime] = None
+    status: str = "active"
+
+class UserAlert(BaseModel):
+    id: Optional[str] = None
+    user_id: str
+    symbol: str
+    message: str
+    is_read: bool = False
+    timestamp: datetime
